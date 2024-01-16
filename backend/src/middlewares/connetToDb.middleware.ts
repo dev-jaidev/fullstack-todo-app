@@ -4,7 +4,6 @@ import { NextFunction, Request, Response } from "express";
 
 const connectDbMiddleware = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    console.log(process.env.MONGO_URI + "/" + process.env.DB_NAME || "")
     if (mongoose.connections[0].readyState) {
       // Use current db connection
       next();
