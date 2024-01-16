@@ -1,4 +1,4 @@
-import { Request, Response, Router } from "express";
+import { Router } from "express";
 import { signUp } from "../controllers/user.controllers";
 import multerMiddleware from "../middlewares/multer.middlerware";
 

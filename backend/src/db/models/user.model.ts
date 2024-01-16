@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config()
 
-interface UserI {
+export interface UserI {
   name: string;
   password: string;
   email: string;
