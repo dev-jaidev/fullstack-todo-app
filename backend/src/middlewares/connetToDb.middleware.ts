@@ -14,6 +14,7 @@ const connectDbMiddleware = asyncHandler(
     await mongoose.connect(
       process.env.MONGO_URI + "/" + process.env.DB_NAME || ""
     );
+    
     next();
     console.log("Connected to DB successfully");
     return;

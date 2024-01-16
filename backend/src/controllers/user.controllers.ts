@@ -35,7 +35,6 @@ const avatar = req.file?.path;
       password,
     });
 
-    console.log(checkSchema.success?checkSchema:checkSchema.error.errors)
 
     if (!checkSchema.success) {
       res
