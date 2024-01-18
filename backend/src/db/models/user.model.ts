@@ -12,7 +12,14 @@ export interface UserI {
   avatar?: string;
 }
 
-const userSchema = new mongoose.Schema<UserI>(
+interface UserMethods {
+  isPasswordValid(password: string): Promise<boolean>;
+  generateAccessToken(): Promise<string>;
+}
+
+type UserModel = mongoose.Model<UserI, {}, UserMethods>;
+
+const userSchema = new mongoose.Schema<UserI, UserModel>(
   {
     name: {
       type: String,
@@ -26,6 +33,7 @@ const userSchema = new mongoose.Schema<UserI>(
       type: String,
       required: true,
       unique: true,
+      lowercase: true,
     },
     avatar: {
       type: String,
@@ -44,20 +52,21 @@ userSchema.pre(
   }
 );
 
-userSchema.methods.isPasswordValid = async function (password: string) {
+userSchema.methods.isPasswordValid = async function (password: string): Promise<boolean>   {
   const isValid = await bcrypt.compare(password, this.password);
   return isValid ? true : false;
 };
 
-userSchema.methods.generateAccessToken = async function () {
-  const jwtSecret = process.env.jwtSecret;
-  const accessTokenExpiry = process.env.ACCESS_TOKEN_EXPIRY;
+userSchema.methods.generateAccessToken = async function (): Promise<string> {
+  const jwtSecret = process.env.JWT_SECRET;
+  const accessTokenExpiry = process.env.JWT_EXPITY;
   if (!jwtSecret) throw new Error("jwtSecret is not defined");
   if (!accessTokenExpiry) throw new Error("accessTokenExpiry is not defined");
 
   const accessToken = jwt.sign(
     {
       _id: this._id,
+      name: this.name,
       email: this.email,
     },
     jwtSecret,
@@ -69,6 +78,6 @@ userSchema.methods.generateAccessToken = async function () {
   return accessToken;
 };
 
-const User = mongoose.model<UserI>("User", userSchema);
+const User = mongoose.model<UserI, UserModel>("User", userSchema);
 
 export default User;
