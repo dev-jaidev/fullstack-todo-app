@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {  login, signUp, updateUser, changePassword, updateAvatar   } from "../controllers/user.controllers";
+import {  login, signUp, updateUser, changePassword, updateAvatar, getCurrentUser   } from "../controllers/user.controllers";
 import multerMiddleware from "../middlewares/multer.middlerware";
 import addUser from "../middlewares/addUser.middleware";
 import userAuth from "../middlewares/userAuth.middleware";
@@ -12,6 +12,8 @@ router.post('/signup', multerMiddleware.single('avatar'), signUp)
 // Login route
 router.post('/login', addUser, login)
 
+
+
 // Secured routes
 
 // update user
@@ -21,7 +23,9 @@ router.put('/update', userAuth, updateUser)
 router.put('/update-avatar', userAuth, multerMiddleware.single('avatar'), updateAvatar)
 
 // change password 
-
 router.put("/update-password", userAuth, changePassword)
+
+// get current user
+router.get('/current-user', userAuth, getCurrentUser)
 
 export default router

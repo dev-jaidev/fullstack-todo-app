@@ -104,7 +104,7 @@ const login = asyncHandler(
           .status(400)
           .send(new ApiResponse(400, {}, "User already logged in"));
       }
-      return
+      return;
     }
 
     const password: string = req.body.password;
@@ -201,7 +201,11 @@ const updateAvatar = asyncHandler(
     res
       .status(200)
       .send(
-        new ApiResponse(200, { user: updatedUser }, "User avatar updated successfully")
+        new ApiResponse(
+          200,
+          { user: updatedUser },
+          "User avatar updated successfully"
+        )
       );
     return;
   }
@@ -247,9 +251,32 @@ const changePassword = asyncHandler(
       return;
     }
 
-    res.status(200).send(new ApiResponse(200, {}, "User password updated successfully"));
+    res
+      .status(200)
+      .send(new ApiResponse(200, {}, "User password updated successfully"));
     return;
   }
 );
 
-export { signUp, login, updateUser, updateAvatar, changePassword };
+// get current user controller
+
+const getCurrentUser = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user?._id;
+    const user = await User.findById(userId).select("-password -__v");
+
+    if (!user) {
+      res
+      .status(400)
+      .send(new ApiResponse(400, {}, "User not found"));
+      return;
+    }
+
+    res
+      .status(200)
+      .send(new ApiResponse(200, { user: user }, "User fetched successfully"));
+    return;
+  }
+);
+
+export { signUp, login, updateUser, updateAvatar, changePassword, getCurrentUser };

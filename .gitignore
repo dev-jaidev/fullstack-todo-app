@@ -3,3 +3,4 @@ dist
 npm-debug.log
 .env
 public
+!public/temp/.gikeep
