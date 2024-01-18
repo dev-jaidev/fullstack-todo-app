@@ -6,8 +6,8 @@ import User, { UserI } from "../db/models/user.model";
 import zod from "zod";
 import { HydratedDocument } from "mongoose";
 import fs from "fs";
-// sign up controller
 
+// sign up controller
 const signUp = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     // deleting temp avatar file after 2 mins
@@ -95,6 +95,12 @@ const signUp = asyncHandler(
 // login controller
 const login = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
+
+    // check if user already logged in
+    if (req.user) {
+      res.status(400).send(new ApiResponse(400, {}, "User already logged in"));
+    }
+
     const password:string = req.body.password;
     const email:string = req.body.email?.toLowerCase();
 
@@ -127,8 +133,101 @@ const login = asyncHandler(
   }
 );
 
+// update user details controller
+const updateUser = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const {name} = req.body;
+    if (!name) {
+      res.status(400).send(new ApiResponse(400, {}, "Name is required"));
+      return
+    }
+    const userId = req.user?._id;
+    const updatedUser = await User.findByIdAndUpdate(userId, {name}, {new: true}).select("-password -__v");
+    if (!updatedUser) {
+      res.status(500).send(new ApiResponse(500, {}, "error while updating user"));
+      return
+    }
+    res.status(200).send(new ApiResponse(200, updatedUser, "User updated successfully"));
+    return
+  }
+)
+
+// update avatar controller
+const updateAvatar = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+
+    const avatar = req.file?.path;
+    if (!avatar) {
+      res.status(400).send(new ApiResponse(400, {}, "Avatar is required"));
+      return
+    }
+    const userId = req.user?._id;
+    const cloudRes = await uploadOnCloudinary(avatar);
+    if (!cloudRes) {
+      res
+        .status(500)
+        .send(new ApiResponse(500, {}, "error while uploading avatar"));
+      return
+    }
+    const avatarUrl = cloudRes.url;
+    const updatedUser = await User.findByIdAndUpdate(userId, {avatar: avatarUrl}, {new: true}).select("-password -__v");
+    if (!updatedUser) {
+      res.status(500).send(new ApiResponse(500, {}, "error while updating user"));
+      return
+    }
+    res.status(200).send(new ApiResponse(200, updatedUser, "User updated successfully"));
+    return
+  })
+
+// change password controller
+const changePassword = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+
+    const passwordSchema = zod.string().min(6);
+
+    const {oldPassword, newPassword} = req.body;
+    if (!(oldPassword && newPassword)) {
+      res.status(400).send(new ApiResponse(400, {}, "All input is required"));
+      return
+    }
+    const isNewPasswordValid = passwordSchema.safeParse(newPassword);
+    if (!isNewPasswordValid.success) {
+      res.status(400).send(new ApiResponse(400, {}, "Password must be 6 characters long"));
+      return
+    }
+
+    const userId = req.user?._id;
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(400).send(new ApiResponse(400, {}, "User not found"));
+      return
+    }
+
+      const isOldPasswordValid = await user.isPasswordValid(oldPassword);
+      if (!isOldPasswordValid) {  
+        res.status(400).send(new ApiResponse(400, {}, "Invalid old password"));
+        return
+      }
+      user.password = newPassword;
+      const updatedUser = await user.save();
+
+      if (!updatedUser) {
+        res.status(500).send(new ApiResponse(500, {}, "error while updating user"));
+        return
+      }
+
+      res.status(200).send(new ApiResponse(200, updatedUser, "User updated successfully"));
+      return
+  
+
+  })
+
+
 
 
 export { signUp,
-  login
+  login,
+  updateUser,
+  updateAvatar,
+  changePassword,
  };

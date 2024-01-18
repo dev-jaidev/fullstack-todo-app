@@ -6,7 +6,7 @@ import { ApiResponse } from "../utils/apiResponse";
 import addUserFunc from "../utils/addUser";
 
 
-export const userAuth = asyncHandler(
+const userAuth = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
         await addUserFunc(req);
         if (!req.user) {
@@ -16,3 +16,5 @@ export const userAuth = asyncHandler(
         next();
     }
 );
+
+export default userAuth;
