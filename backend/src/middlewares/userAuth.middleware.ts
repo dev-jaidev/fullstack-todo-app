@@ -7,6 +7,7 @@ import addUserFunc from "../utils/addUser";
 
 
 const userAuth = asyncHandler(
+
     async (req: Request, res: Response, next: NextFunction) => {
         await addUserFunc(req);
         if (!req.user) {

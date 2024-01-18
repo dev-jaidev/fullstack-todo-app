@@ -88,78 +88,95 @@ const signUp = asyncHandler(
 
     res
       .status(201)
-      .send(new ApiResponse(201, createdUser, "User created successfully"));
+      .send(
+        new ApiResponse(201, { user: createdUser }, "User created successfully")
+      );
   }
 );
 
 // login controller
 const login = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-
     // check if user already logged in
-    if (req.user) {
-      res.status(400).send(new ApiResponse(400, {}, "User already logged in"));
+    if ("user" in req) {
+      if (req.user) {
+        res
+          .status(400)
+          .send(new ApiResponse(400, {}, "User already logged in"));
+      }
+      return
     }
 
-    const password:string = req.body.password;
-    const email:string = req.body.email?.toLowerCase();
+    const password: string = req.body.password;
+    const email: string = req.body.email?.toLowerCase();
 
     if (!(email && password)) {
       res.status(400).send(new ApiResponse(400, {}, "All input is required"));
-      return
+      return;
     }
     const user = await User.findOne({ email });
     if (!user) {
       res.status(400).send(new ApiResponse(400, {}, "User not found"));
-      return
+      return;
     }
 
-  const isPasswordValid = await user.isPasswordValid(password)
+    const isPasswordValid = await user.isPasswordValid(password);
 
-  if (!isPasswordValid) {
-    res.status(400).send(new ApiResponse(400, {}, "Invalid Credentials"));
-    return
-  }
+    if (!isPasswordValid) {
+      res.status(400).send(new ApiResponse(400, {}, "Invalid Credentials"));
+      return;
+    }
 
-  const accessToken =  await user.generateAccessToken()
+    const accessToken = await user.generateAccessToken();
 
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: true,
-  })
+    res
+      .cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: true,
+      })
 
-  .status(200).send(new ApiResponse(200, {accessToken}, "Login Successful"))
-  return
+      .status(200)
+      .send(new ApiResponse(200, { accessToken }, "Login Successful"));
+    return;
   }
 );
 
 // update user details controller
 const updateUser = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const {name} = req.body;
+    const { name } = req.body;
     if (!name) {
       res.status(400).send(new ApiResponse(400, {}, "Name is required"));
-      return
+      return;
     }
     const userId = req.user?._id;
-    const updatedUser = await User.findByIdAndUpdate(userId, {name}, {new: true}).select("-password -__v");
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { name },
+      { new: true }
+    ).select("-password -__v");
     if (!updatedUser) {
-      res.status(500).send(new ApiResponse(500, {}, "error while updating user"));
-      return
+      res
+        .status(500)
+        .send(new ApiResponse(500, {}, "error while updating user"));
+      return;
     }
-    res.status(200).send(new ApiResponse(200, updatedUser, "User updated successfully"));
-    return
+    res
+      .status(200)
+      .send(
+        new ApiResponse(200, { user: updatedUser }, "User updated successfully")
+      );
+    return;
   }
-)
+);
 
 // update avatar controller
 const updateAvatar = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-
     const avatar = req.file?.path;
     if (!avatar) {
       res.status(400).send(new ApiResponse(400, {}, "Avatar is required"));
-      return
+      return;
     }
     const userId = req.user?._id;
     const cloudRes = await uploadOnCloudinary(avatar);
@@ -167,67 +184,72 @@ const updateAvatar = asyncHandler(
       res
         .status(500)
         .send(new ApiResponse(500, {}, "error while uploading avatar"));
-      return
+      return;
     }
     const avatarUrl = cloudRes.url;
-    const updatedUser = await User.findByIdAndUpdate(userId, {avatar: avatarUrl}, {new: true}).select("-password -__v");
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { avatar: avatarUrl },
+      { new: true }
+    ).select("-password -__v");
     if (!updatedUser) {
-      res.status(500).send(new ApiResponse(500, {}, "error while updating user"));
-      return
+      res
+        .status(500)
+        .send(new ApiResponse(500, {}, "error while updating user"));
+      return;
     }
-    res.status(200).send(new ApiResponse(200, updatedUser, "User updated successfully"));
-    return
-  })
+    res
+      .status(200)
+      .send(
+        new ApiResponse(200, { user: updatedUser }, "User avatar updated successfully")
+      );
+    return;
+  }
+);
 
 // change password controller
 const changePassword = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-
     const passwordSchema = zod.string().min(6);
 
-    const {oldPassword, newPassword} = req.body;
+    const { oldPassword, newPassword } = req.body;
     if (!(oldPassword && newPassword)) {
       res.status(400).send(new ApiResponse(400, {}, "All input is required"));
-      return
+      return;
     }
     const isNewPasswordValid = passwordSchema.safeParse(newPassword);
     if (!isNewPasswordValid.success) {
-      res.status(400).send(new ApiResponse(400, {}, "Password must be 6 characters long"));
-      return
+      res
+        .status(400)
+        .send(new ApiResponse(400, {}, "Password must be 6 characters long"));
+      return;
     }
 
     const userId = req.user?._id;
     const user = await User.findById(userId);
     if (!user) {
       res.status(400).send(new ApiResponse(400, {}, "User not found"));
-      return
+      return;
     }
 
-      const isOldPasswordValid = await user.isPasswordValid(oldPassword);
-      if (!isOldPasswordValid) {  
-        res.status(400).send(new ApiResponse(400, {}, "Invalid old password"));
-        return
-      }
-      user.password = newPassword;
-      const updatedUser = await user.save();
+    const isOldPasswordValid = await user.isPasswordValid(oldPassword);
+    if (!isOldPasswordValid) {
+      res.status(400).send(new ApiResponse(400, {}, "Invalid old password"));
+      return;
+    }
+    user.password = newPassword;
+    const updatedUser = await user.save();
 
-      if (!updatedUser) {
-        res.status(500).send(new ApiResponse(500, {}, "error while updating user"));
-        return
-      }
+    if (!updatedUser) {
+      res
+        .status(500)
+        .send(new ApiResponse(500, {}, "error while updating password"));
+      return;
+    }
 
-      res.status(200).send(new ApiResponse(200, updatedUser, "User updated successfully"));
-      return
-  
+    res.status(200).send(new ApiResponse(200, {}, "User password updated successfully"));
+    return;
+  }
+);
 
-  })
-
-
-
-
-export { signUp,
-  login,
-  updateUser,
-  updateAvatar,
-  changePassword,
- };
+export { signUp, login, updateUser, updateAvatar, changePassword };

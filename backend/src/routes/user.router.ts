@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changePassword, login, signUp, updateUser } from "../controllers/user.controllers";
+import {  login, signUp, updateUser, changePassword, updateAvatar   } from "../controllers/user.controllers";
 import multerMiddleware from "../middlewares/multer.middlerware";
 import addUser from "../middlewares/addUser.middleware";
 import userAuth from "../middlewares/userAuth.middleware";
@@ -18,10 +18,10 @@ router.post('/login', addUser, login)
 router.put('/update', userAuth, updateUser)
 
 // change avatar
-router.put('/change-avatar', userAuth, multerMiddleware.single('avatar'), updateUser)
+router.put('/update-avatar', userAuth, multerMiddleware.single('avatar'), updateAvatar)
 
 // change password 
 
-router.put("/change-password", userAuth, changePassword)
+router.put("/update-password", userAuth, changePassword)
 
 export default router

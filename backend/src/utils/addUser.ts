@@ -10,11 +10,12 @@ const addUserFunc = async (req: Request): Promise<void> => {
       return;
     }
     
-    const jwtSecret = process.env.jwtSecret;
+    const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) throw new Error("jwtSecret is not defined");
 
     try {
       const user = jwt.verify(authToken, jwtSecret);
+      if (!user) return;
       req.user = JSON.parse(JSON.stringify(user));
       return
     } catch (error) {
