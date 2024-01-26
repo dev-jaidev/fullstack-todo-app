@@ -34,6 +34,7 @@ const userSchema = new mongoose.Schema<UserI, UserModel>(
       required: true,
       unique: true,
       lowercase: true,
+      index: true,
     },
     avatar: {
       type: String,

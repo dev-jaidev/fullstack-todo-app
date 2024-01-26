@@ -18,7 +18,7 @@ app.use(express.static("public"))
 app.use(cookieParser())
 
 // user router
-app.use("/user", userRouter);
+app.use("api/v1/user", userRouter);
 
 // global error handle
 app.use(handleError)
