@@ -5,7 +5,7 @@ export interface TodoI {
     parent?: mongoose.Types.ObjectId;
     title: string;
     description: string;
-    isCompleted: boolean;
+    isCompleted?: boolean;
     priority: 1 | 2 | 3;
     dueDate?: Date;
     tags?: mongoose.Types.Array<string>;
@@ -31,7 +31,7 @@ const todoSchema = new mongoose.Schema<TodoI>({
     },
     isCompleted:{
         type: Boolean,
-        required: true
+        default: false
     },
     priority:{
         type: Number,
