@@ -61,3 +61,8 @@ const getFolders = asyncHandler(async (req: Request, res: Response): Promise<voi
     res.status(200).send(new ApiResponse(200, { folders }, "Folders fetched successfully"));
     return;
 })
+
+export{
+    createFolder,
+    getFolders
+}

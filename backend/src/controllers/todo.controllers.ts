@@ -151,7 +151,6 @@ const toggleIsCompleted = asyncHandler(
     }
 )
 
-
 // get all todos
 const getTodos = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
