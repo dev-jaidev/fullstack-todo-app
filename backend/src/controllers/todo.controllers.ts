@@ -15,7 +15,7 @@ const createTodo = asyncHandler(
         title: zod.string().min(3).trim(),
         description: zod.string().min(3).trim(),
         priority: zod.number().min(1).max(3),
-        tags: zod.array(zod.string()),
+        tags: zod.array(zod.string().trim()),
         dueDate: zod.date(),
     });
 
@@ -87,7 +87,7 @@ const updateTodo = asyncHandler(async (req: Request, res: Response): Promise<voi
         title: zod.string().min(3).trim(),
         description: zod.string().min(3).trim(),
         priority: zod.number().min(1).max(3),
-        tags: zod.array(zod.string()),
+        tags: zod.array(zod.string().trim()),
         dueDate: zod.date(),
     });
 
@@ -125,6 +125,28 @@ const updateTodo = asyncHandler(async (req: Request, res: Response): Promise<voi
     res.status(200).send(new ApiResponse(200, { todo: newTodo }, "Todo updated successfully"));
     
 })
+
+// delete todo
+const deleteTodo = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+        const todo = await Todo.findOne({ user: req.user?._id, _id: req.query.id })
+
+        if(!todo){
+            res.status(500).send(new ApiResponse(500, {}, "Todo not found"));
+            return;
+        }
+
+        const todoDeleted = await todo.deleteOne()
+
+        if(!todoDeleted){
+            res.status(500).send(new ApiResponse(500, {}, "Something went wrong"));
+            return;
+        }
+
+        res.status(200).send(new ApiResponse(200, {}, "Todo deleted successfully"));
+        return;
+    }
+)
 
 // toggle isCompleted status
 const toggleIsCompleted = asyncHandler(
@@ -209,5 +231,5 @@ const getTodos = asyncHandler(async (req: Request, res: Response): Promise<void>
 });
 
 export { 
-    createTodo, updateTodo, toggleIsCompleted, getTodos
+    createTodo, updateTodo, toggleIsCompleted, getTodos, deleteTodo
 }

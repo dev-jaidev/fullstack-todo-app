@@ -62,7 +62,68 @@ const getFolders = asyncHandler(async (req: Request, res: Response): Promise<voi
     return;
 })
 
+// update folder
+
+const updateFolder = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const {id, name} = req.body
+    const isFolderExists = await Folder.findOne({
+        user: new mongoose.Types.ObjectId(req.user?._id),
+        _id: new mongoose.Types.ObjectId(id),
+    })
+    if (!isFolderExists) {
+        res
+        .status(400)
+        .send(new ApiResponse(400, {}, "Folder does not exists"));
+        return
+    }
+    const updatedFolder = await Folder.findOneAndUpdate(
+        {user: new mongoose.Types.ObjectId(req.user?._id), _id: new mongoose.Types.ObjectId(id)},
+        {name: name? name : "Untitled Folder"}, {new: true}
+        )
+
+    if(!updatedFolder){
+        res
+        .status(500)
+        .send(new ApiResponse(500, {}, "Something went wrong"));
+        return
+    }
+
+    res
+    .status(200)
+    .send(new ApiResponse(200, { folder: updatedFolder }, "Folder updated successfully"));
+})
+
+// delete folder
+const deleteFolder = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const {id} = req.body
+    const isFolderExists = await Folder.findOne({
+        user: new mongoose.Types.ObjectId(req.user?._id),
+        _id: new mongoose.Types.ObjectId(id),
+    })
+    if (!isFolderExists) {
+        res
+        .status(400)
+        .send(new ApiResponse(400, {}, "Folder does not exists"));
+        return
+    }
+    const deletedFolder = await Folder.findOneAndDelete({user: new mongoose.Types.ObjectId(req.user?._id), _id: new mongoose.Types.ObjectId(id)})
+
+    if(!deletedFolder){
+        res
+        .status(500)
+        .send(new ApiResponse(500, {}, "Something went wrong"));
+        return
+    }
+
+    res
+    .status(200)
+    .send(new ApiResponse(200, {}, "Folder deleted successfully"));
+})
+
+
 export{
     createFolder,
-    getFolders
+    getFolders,
+    updateFolder,
+    deleteFolder
 }

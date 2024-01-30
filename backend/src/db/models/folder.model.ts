@@ -21,10 +21,11 @@ const folderSchema = new mongoose.Schema<FolderI>({
     name: {
         type: String,
         index: true,
-        default: "New Folder"
+        default: "New Folder",
+        trim: true
     },
 
-})
+}, {timestamps : true})
 
 const Folder = mongoose.model<FolderI>("Folder", folderSchema)
 

@@ -23,11 +23,13 @@ const todoSchema = new mongoose.Schema<TodoI>({
     title:{
         type: String,
         required: true,
-        index: true
+        index: true,
+        trim: true
     },
     description:{
         type: String,
         required: true,
+        trim: true
     },
     isCompleted:{
         type: Boolean,
