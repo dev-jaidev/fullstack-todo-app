@@ -8,7 +8,7 @@ const router = Router()
 router.post('/create', userAuth, createFolder)
 
 // update folder
-router.put('/update', updateFolder)
+router.put('/update', userAuth, updateFolder)
 
 // delete folder
 router.delete('/delete', userAuth, deleteFolder)

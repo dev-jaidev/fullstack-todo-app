@@ -3,7 +3,6 @@ import { asyncHandler } from "../utils/asyncHandler";
 import Todo, { TodoI } from "../db/models/todo.model";
 import { ApiResponse } from "../utils/apiResponse";
 import zod from "zod";
-import exp from "constants";
 import mongoose, { HydratedDocument } from "mongoose";
 import Folder from "../db/models/folder.model";
 
@@ -15,8 +14,8 @@ const createTodo = asyncHandler(
         title: zod.string().min(3).trim(),
         description: zod.string().min(3).trim(),
         priority: zod.number().min(1).max(3),
-        tags: zod.array(zod.string().trim()),
-        dueDate: zod.date(),
+        tags: zod.array(zod.string().trim()).optional(),
+        dueDate: zod.string().datetime().optional(),
     });
 
     const parsedSchema = todoSchema.safeParse({
@@ -45,6 +44,18 @@ const createTodo = asyncHandler(
 
     // if parent exists with this user or not
     if (parsedSchema.data.parent) {
+
+        const isParentIdValid = mongoose.Types.ObjectId.isValid(
+            parsedSchema.data.parent
+        )
+
+        if (!isParentIdValid) {
+            res
+            .status(400)
+            .send(new ApiResponse(400, {}, "Parent folder does not exists"));
+            return
+        }
+
         const isFolderExists = await Folder.findOne({
             user: new mongoose.Types.ObjectId(req.user?._id),
             _id: new mongoose.Types.ObjectId(parsedSchema.data.parent),
@@ -60,7 +71,7 @@ const createTodo = asyncHandler(
 
     const newTodo:HydratedDocument<TodoI> = await Todo.create({
         user: new mongoose.Types.ObjectId(req.user?._id),
-        parent: new mongoose.Types.ObjectId(parsedSchema.data.parent),
+        parent: parsedSchema.data.parent ? new mongoose.Types.ObjectId(parsedSchema.data.parent): null,
         title: parsedSchema.data.title,
         description: parsedSchema.data.description,
         priority: parsedSchema.data.priority,
@@ -83,15 +94,17 @@ const createTodo = asyncHandler(
 const updateTodo = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
     const todoSchema = zod.object({
+        id: zod.string(),
         parent: zod.string().optional(),
         title: zod.string().min(3).trim(),
         description: zod.string().min(3).trim(),
         priority: zod.number().min(1).max(3),
         tags: zod.array(zod.string().trim()),
-        dueDate: zod.date(),
+        dueDate: zod.string().datetime().optional(),
     });
 
     const parsedSchema = todoSchema.safeParse({
+        id: req.body.id,
         parent: req.body.parent,
         title: req.body.title,
         description: req.body.description,
@@ -115,14 +128,46 @@ const updateTodo = asyncHandler(async (req: Request, res: Response): Promise<voi
     return;
     }
 
-    const newTodo = await Todo.findOneAndUpdate({ user: req.user?._id, _id: req.query.id }, parsedSchema.data, { new: true })
+    if (parsedSchema.data.parent) {
+        const isParentIdValid = mongoose.Types.ObjectId.isValid(
+            parsedSchema.data.parent
+        )
 
-    if(!newTodo){
+        if (!isParentIdValid) {
+            res
+            .status(400)
+            .send(new ApiResponse(400, {}, "Parent folder does not exists"));
+            return
+        }
+        const isFolderExists = await Folder.findOne({
+            user: new mongoose.Types.ObjectId(req.user?._id),
+            _id: new mongoose.Types.ObjectId(parsedSchema.data.parent),
+        });
+
+        if (!isFolderExists) {
+            res
+            .status(400)
+            .send(new ApiResponse(400, {}, "Parent folder does not exists"));
+            return
+        }
+    }
+
+    const updatedTodo = await Todo.findOneAndUpdate({ user: req.user?._id, _id: parsedSchema.data.id },{
+        parent: parsedSchema.data.parent ? new mongoose.Types.ObjectId(parsedSchema.data.parent): null,
+        title: parsedSchema.data.title,
+        description: parsedSchema.data.description,
+        priority: parsedSchema.data.priority,
+        tags: parsedSchema.data.tags,
+        dueDate: parsedSchema.data.dueDate,
+        isCompleted: false,
+    }, { new: true })
+
+    if(!updatedTodo){
         res.status(500).send(new ApiResponse(500, {}, "Todo not found"));
         return;
     }
     
-    res.status(200).send(new ApiResponse(200, { todo: newTodo }, "Todo updated successfully"));
+    res.status(200).send(new ApiResponse(200, { todo: updatedTodo }, "Todo updated successfully"));
     
 })
 
@@ -167,58 +212,93 @@ const toggleIsCompleted = asyncHandler(
             return;
         }
 
-        res.status(200).send(new ApiResponse(200, { todo }, "Todo updated successfully"));
+        res.status(200).send(new ApiResponse(200, {}, `Todo marked as ${todo.isCompleted? "completed": "uncompleted"} successfully`));
         return;
 
     }
 )
 
+// toggle isPinned
+const toggleIsPinned = asyncHandler(async(req: Request, res: Response): Promise<void> =>{
+const todo = await Todo.findOne({ user: req.user?._id, _id: req.query.id })
+if (!todo) {
+    res.status(500).send(new ApiResponse(500, {}, "Todo not found"));
+    return;
+}
+todo.isPinned = !todo.isPinned;
+const savedTodo = await todo.save();
+if (!savedTodo) {
+    res.status(500).send(new ApiResponse(500, {}, "Something went wrong"));
+}    
+res.status(200).send(new ApiResponse(200, { }, `Todo ${savedTodo.isPinned? "pinned": "unpinned"} successfully`));
+
+})
+
 // get all todos
 const getTodos = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
     const sortByTime = req.query.sortbytime
-    const tagsString = req.query.tags;
+    const tagsString = req.query.tags as string
     const sortByPriority = req.query.sortbypriority
     const sortByDueDate = req.query.sortbyduedate
+    const parent = req.query.parent
+    const isCompeleted = req.query.iscompeleted
 
     interface SortBy {
-        createdAt: 1 | -1;
+        createdAt?: 1 | -1;
         priority?: 1 | -1;
         dueDate?: 1 | -1;
     }
 
-    let sortBy:SortBy = {
-        createdAt: -1
-    }
+    let sortBy:SortBy = {}
 
     if(sortByTime === "older"){
         sortBy.createdAt = 1
     }
-
-    if (sortByPriority === "high") {
+    else if (sortByPriority === "high") {
         sortBy.priority = -1
     }
     else if (sortByPriority === "low") {
         sortBy.priority = 1
     }
-
-    if (sortByDueDate === "later") {
+    else if (sortByDueDate === "later") {
         sortBy.dueDate = -1
     }
     else if (sortByDueDate === "earlier") {
         sortBy.dueDate = 1
     }
-    
-    let todos: HydratedDocument<TodoI>[] = [];
-
-    if (tagsString) {
-        const tags: string[] = JSON.stringify(tagsString).split(',')
-        todos = await Todo.find({ user: req.user?._id, tags: {$in: tags}  }).sort({...sortBy});
+    else{
+        sortBy.createdAt = -1
     }
 
-    todos = await Todo.find({ user: req.user?._id, }).sort({...sortBy});
+    interface Filter {
+        user: mongoose.Types.ObjectId,
+        parent?: string,
+        $or?: {tags: {$regex: RegExp}}[],
+        isCompleted?: boolean,
+    }
 
-    if (!todos) {
+    let filter: Filter = {
+        user: new mongoose.Types.ObjectId(req.user?._id),
+    }
+    if (tagsString) {
+        const tags: string[] = tagsString.split(',').map(tag => tag.trim())
+        filter.$or = tags.map(tag => ({ tags: { $regex: new RegExp(tag, 'i') } }))
+    }
+    if (parent) {
+        filter.parent = parent as string
+    }
+    if (isCompeleted == "true") {
+        filter.isCompleted = true
+    }
+    else if (isCompeleted == "false") {
+        filter.isCompleted = false
+    }
+    
+    console.log(filter)
+    const todos = await Todo.find({...filter}).sort({...sortBy})
+
+    if (!todos.length) {
         res.status(404).send(new ApiResponse(404, {}, "No todos found"));
         return
     }
@@ -231,5 +311,5 @@ const getTodos = asyncHandler(async (req: Request, res: Response): Promise<void>
 });
 
 export { 
-    createTodo, updateTodo, toggleIsCompleted, getTodos, deleteTodo
+    createTodo, updateTodo, toggleIsCompleted, getTodos, deleteTodo, toggleIsPinned
 }

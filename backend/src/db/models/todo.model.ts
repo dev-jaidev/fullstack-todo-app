@@ -9,6 +9,7 @@ export interface TodoI {
     priority: 1 | 2 | 3;
     dueDate?: Date;
     tags?: mongoose.Types.Array<string>;
+    isPinned: boolean
 }
 
 const todoSchema = new mongoose.Schema<TodoI>({
@@ -32,6 +33,10 @@ const todoSchema = new mongoose.Schema<TodoI>({
         trim: true
     },
     isCompleted:{
+        type: Boolean,
+        default: false
+    },
+    isPinned: {
         type: Boolean,
         default: false
     },
