@@ -45,7 +45,8 @@ const todoSchema = new mongoose.Schema<TodoI>({
         required: true
     },
     dueDate:{
-        type: Date
+        type: Date,
+        default: null
     },
     tags: {
         type: [String],

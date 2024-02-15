@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createTodo, deleteTodo, getTodos, toggleIsCompleted, toggleIsPinned, updateTodo } from "../controllers/todo.controllers";
+import { createTodo, deleteTodo, getAllTags, getTodos, toggleIsCompleted, toggleIsPinned, updateTodo } from "../controllers/todo.controllers";
 import userAuth from "../middlewares/userAuth.middleware";
 
 const router = Router()
@@ -21,5 +21,8 @@ router.get('/get', userAuth, getTodos)
 
 // pin todo
 router.put('/pin', userAuth, toggleIsPinned)
+
+// get tags
+router.get('/tags', userAuth, getAllTags)
 
 export default router;
