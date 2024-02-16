@@ -2,10 +2,15 @@
 
 import { Request } from "express";
 import multer, { MulterError } from "multer";
+import fs from "fs"
 
 const storage = multer.diskStorage({
   destination: (req: Request, file:Express.Multer.File, cb) => {
-    cb(null, "./public/temp");
+    const uploadPath = "./public/temp";
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
   },
   filename: (req:Request, file: Express.Multer.File, cb) => {
     cb(null, Date.now() + "-" + file.originalname.replace(" ", "_"));
