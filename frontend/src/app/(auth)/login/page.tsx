@@ -14,6 +14,7 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form";
+
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { ReloadIcon } from "@radix-ui/react-icons";
@@ -28,19 +29,15 @@ export default function ProfileForm() {
     const router = useRouter()
 
     const formSchema = zod.object({
-        name: zod.string().min(3).trim(),
         email: zod.string().email(),
-        password: zod.string().min(6),
-        avatar: zod.any(),
+        password: zod.string()
     });
 
     const form = useForm<zod.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            name: "",
             email: "",
             password: "",
-            avatar: "",
         },
     });
 
@@ -48,24 +45,14 @@ export default function ProfileForm() {
         values: zod.infer<typeof formSchema>
     ): Promise<void> => {
         setIsLoading(true);
-        const formData = new FormData();
-        Object.keys(values).forEach((key) => {
-            if (key === 'avatar' && values.avatar) {
-                formData.append(key, values.avatar);
-            } else {
-                formData.append(key, values[key as keyof typeof values]);
-            }
-        });
-    
         try {
-            const res = await axios.post(`${BACKEND_URL}/user/signup`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
+            const res = await axios.post(`${BACKEND_URL}/user/login`, values);
             toast(res.data.message);
-            form.reset();
-            router.push('/login')
+            if (res.status === 200) {
+                localStorage.setItem("accessToken", res.data.data.accessToken);
+                form.reset();
+                router.push('/dashboard')
+            }
         } catch (error: any) {
             toast(error.response.data.message);
         }
@@ -79,24 +66,11 @@ export default function ProfileForm() {
     return (
         <Form {...form}>
             <div className="w-full h-screen flex items-center justify-center flex-col">
-                <h1 className="text-2xl font-bold mb-5">Sign Up</h1>
+                <h1 className="text-2xl font-bold mb-5">Login to Continue</h1>
                 <form
                     onSubmit={form.handleSubmit(onSubmit)}
                     className="max-w-sm container [&>*]:mb-3"
                 >
-                    <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Name</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Name" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
                     <FormField
                         control={form.control}
                         name="email"
@@ -123,29 +97,6 @@ export default function ProfileForm() {
                             </FormItem>
                         )}
                     />
-                    <FormField
-                        control={form.control}
-                        name="avatar"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Avatar</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        id="avatar"
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) {
-                                                field.onChange(file);
-                                            }
-                                        }}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
                     <Button
                         type="submit"
                         className="w-full mt-5 font-bold text-md"
@@ -161,7 +112,7 @@ export default function ProfileForm() {
                         )}
                     </Button>
                 </form>
-                <Link href="/login" className="font-thin underline text-sm">Login</Link>
+                <Link href="/signup" className="font-thin underline text-sm">Signup</Link>
             </div>
         </Form>
     );

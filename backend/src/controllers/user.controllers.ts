@@ -132,7 +132,7 @@ const login = asyncHandler(
     res
       .cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
       })
 
       .status(200)

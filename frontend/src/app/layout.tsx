@@ -3,6 +3,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import Nav from "@/components/navbar/nav";
 import { Toaster } from "@/components/ui/sonner";
+import { RecoilRoot } from "recoil";
+import Providers from "@/providers";
 
 export const metadata: Metadata = {
     title: "MY TODO",
@@ -18,21 +20,17 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className="font-mono min-h-screen dark:bg-black">
-                <ThemeProvider
-                    attribute="class"
-                    defaultTheme="system"
-                    enableSystem
-                >
+                <Providers>
                     <div className="w-full min-h-screen flex justify-center">
                         <main className="min-h-screen container">
                             {children}
-                            <Toaster/>
+                            <Toaster />
                         </main>
                     </div>
                     <footer>
                         <Nav />
                     </footer>
-                </ThemeProvider>
+                    </Providers>
             </body>
         </html>
     );

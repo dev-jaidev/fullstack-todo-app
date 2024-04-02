@@ -1,10 +1,11 @@
+"use client"
 
-const page = () => {
-  return (
-    <div>
-      DashBoard
-    </div>
-  )
-}
+import { useIsUserLoggedIn } from "@/lib/hooks";
 
-export default page
+const Page = () => {
+    useIsUserLoggedIn()
+
+    return <div>DashBoard</div>;
+};
+
+export default Page;

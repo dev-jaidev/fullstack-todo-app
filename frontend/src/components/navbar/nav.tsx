@@ -1,12 +1,5 @@
-import {
-    Menubar,
-    MenubarContent,
-    MenubarItem,
-    MenubarMenu,
-    MenubarSeparator,
-    MenubarShortcut,
-    MenubarTrigger,
-} from "@/components/ui/menubar";
+"use client";
+import { Menubar, MenubarMenu } from "@/components/ui/menubar";
 import {
     Tooltip,
     TooltipContent,
@@ -14,63 +7,35 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { AvatarIcon } from "@radix-ui/react-icons";
 
-import { AvatarIcon, DashboardIcon } from "@radix-ui/react-icons";
 import { Button } from "../ui/button";
-import Link from "next/link";
 import { IoIosLogOut, IoMdAdd } from "react-icons/io";
-import dynamic from "next/dynamic";
 import ThemeSwitcher from "./theme-switcher";
+import { usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useRecoilValue } from "recoil";
+import { userDetails } from "@/lib/recoil/atoms";
+import Image from "next/image";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import Account from "./Account";
 
 const Nav = () => {
-    return (
-      <div className="container max-w-[33rem] fixed bottom-3 left-0 right-0">
-                <Menubar className="h-auto py-2 px-4 gap-4 justify-center bg-green-500 dark:bg-green-300 !bg-opacity-50 rounded-full">
-              <TooltipProvider>
-                    <MenubarMenu>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Link href={"/dashboard"}>
-                                    <Button
-                                        variant={"outline"}
-                                        className="p-2 h-auto w-auto bg-transparent hover:bg-green-600 hover:text-white border-none rounded-xl"
-                                        size={"icon"}
-                                    >
-                                        <DashboardIcon className="h-[1.7rem] w-[1.7rem]" />
-                                    </Button>
-                                </Link>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <span className="font-bold">Dashboard</span>
-                            </TooltipContent>
-                        </Tooltip>
-                    </MenubarMenu>
+    const router = useRouter();
+    const pathname = usePathname();
+    const userDetail = useRecoilValue(userDetails);
 
+    return pathname === "/dashboard" ? (
+        <div className="container max-w-[33rem] fixed bottom-3 left-0 right-0 pr-2 pl-2">
+            <Menubar className="h-auto py-2 px-4 gap-4 justify-center bg-green-500 dark:bg-green-300 !bg-opacity-50 rounded-full">
+                <TooltipProvider>
                     <MenubarMenu>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <ThemeSwitcher/> 
+                                <ThemeSwitcher />
                             </TooltipTrigger>
                             <TooltipContent>
                                 <span className="font-bold">Theme</span>
-                            </TooltipContent>
-                        </Tooltip>
-                    </MenubarMenu>
-
-                    <MenubarMenu>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                            <Button
-                                    variant={"outline"}
-                                    className="p-2 h-auto w-auto bg-transparent hover:bg-green-600 hover:text-white border-none rounded-xl"
-                                    size={"icon"}
-                                >
-                                    <IoMdAdd className="h-[1.7rem] w-[1.7rem]" />
-                                </Button>
-
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <span className="font-bold">Add TODO</span>
                             </TooltipContent>
                         </Tooltip>
                     </MenubarMenu>
@@ -83,8 +48,30 @@ const Nav = () => {
                                     className="p-2 h-auto w-auto bg-transparent hover:bg-green-600 hover:text-white border-none rounded-xl"
                                     size={"icon"}
                                 >
-                                    <AvatarIcon className="h-[1.7rem] w-[1.7rem]" />
+                                    <IoMdAdd className="sm:h-[1.7rem] sm:w-[1.7rem] h-[1.5rem] w-[1.5rem]" />
                                 </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <span className="font-bold">Add TODO</span>
+                            </TooltipContent>
+                        </Tooltip>
+                    </MenubarMenu>
+
+                    <MenubarMenu>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Account>
+                                <Button
+                                    variant={"outline"}
+                                    className="p-2 h-auto w-auto bg-transparent hover:bg-green-600 hover:text-white border-none rounded-xl"
+                                    size={"icon"}
+                                >
+                                        <Avatar className="sm:h-[1.7rem] sm:w-[1.7rem] h-[1.5rem] w-[1.5rem]">
+                                        <AvatarImage src={userDetail.user.avatar} alt="Avatar"/>
+                                        <AvatarFallback>{userDetail.user.name.split("")[0]}</AvatarFallback>
+                                      </Avatar>
+                                </Button>
+                                </Account>
                             </TooltipTrigger>
                             <TooltipContent>
                                 <span className="font-bold">Account</span>
@@ -99,8 +86,13 @@ const Nav = () => {
                                     variant={"outline"}
                                     className="p-2 h-auto w-auto bg-transparent hover:bg-green-600 hover:text-white border-none rounded-xl"
                                     size={"icon"}
+                                    onClick={() => {
+                                        localStorage.removeItem("accessToken");
+                                        router.push("/login");
+                                        toast("Logged out successfully");
+                                    }}
                                 >
-                                    <IoIosLogOut className="h-[1.7rem] w-[1.7rem]" />
+                                    <IoIosLogOut className="sm:h-[1.7rem] sm:w-[1.7rem] h-[1.5rem] w-[1.5rem]" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -108,11 +100,10 @@ const Nav = () => {
                             </TooltipContent>
                         </Tooltip>
                     </MenubarMenu>
-
-        </TooltipProvider>
-                </Menubar>
-            </div>
-    );
+                </TooltipProvider>
+            </Menubar>
+        </div>
+    ) : null;
 };
 
 export default Nav;
