@@ -426,7 +426,6 @@ const getAllTags = asyncHandler(
                 },
             },
         ]);
-        console.log(tags);
         if (!tags.length) {
             res.status(404).send(new ApiResponse(404, {}, "No tags found"));
             return;

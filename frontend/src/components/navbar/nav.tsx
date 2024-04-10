@@ -7,7 +7,6 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { AvatarIcon } from "@radix-ui/react-icons";
 
 import { Button } from "../ui/button";
 import { IoIosLogOut, IoMdAdd } from "react-icons/io";
@@ -16,9 +15,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useRecoilValue } from "recoil";
 import { userDetails } from "@/lib/recoil/atoms";
-import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import Account from "./Account";
+import TodoForm from "../TodoForm/TodoForm";
 
 const Nav = () => {
     const router = useRouter();
@@ -43,6 +42,7 @@ const Nav = () => {
                     <MenubarMenu>
                         <Tooltip>
                             <TooltipTrigger asChild>
+                                <TodoForm>
                                 <Button
                                     variant={"outline"}
                                     className="p-2 h-auto w-auto bg-transparent hover:bg-green-600 hover:text-white border-none rounded-xl"
@@ -50,6 +50,7 @@ const Nav = () => {
                                 >
                                     <IoMdAdd className="sm:h-[1.7rem] sm:w-[1.7rem] h-[1.5rem] w-[1.5rem]" />
                                 </Button>
+                                </TodoForm>
                             </TooltipTrigger>
                             <TooltipContent>
                                 <span className="font-bold">Add TODO</span>
