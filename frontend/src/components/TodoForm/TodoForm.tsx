@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { Textarea } from "@/components/ui/textarea";
@@ -37,16 +38,17 @@ import {
 import { Input } from "@/components/ui/input";
 import Tags from "./Tags";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { CalendarIcon } from "@radix-ui/react-icons";
+import { CalendarIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { Calendar } from "../ui/calendar";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { cache, useEffect, useState } from "react";
 import axios from "axios";
 import { BACKEND_URL } from "../../../config";
 import { useRecoilValue } from "recoil";
 import { userDetails } from "@/lib/recoil/atoms";
+import { toast } from "sonner";
 
-export default function TodoForm({ children }: { children: React.ReactNode }) {
+export default function TodoForm({ children, todo }: { children: React.ReactNode, todo?: any}) {
     const formSchema = z.object({
         title: z
             .string()
@@ -62,9 +64,9 @@ export default function TodoForm({ children }: { children: React.ReactNode }) {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            title: "",
-            description: "",
-            priority: "1",
+            title: todo?.title ||"",
+            description: todo.description ||"",
+            priority: todo?.priority.toString() || "1",
             parent: "",
             dueDate: undefined,
             tags: [],
@@ -73,31 +75,48 @@ export default function TodoForm({ children }: { children: React.ReactNode }) {
 
     const [folders, setFolders] = useState<any[]>([]);
     const userDetail = useRecoilValue(userDetails);
-
+    const [open, setOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            const res = await axios.post(`${BACKEND_URL}/todo/add`, values, {
-                headers: {
-                    Authorization: `Bearer ${userDetail.token}`
+            const res = await axios.post(
+                `${BACKEND_URL}/todo/create`,
+                { ...values, priority: parseInt(values.priority) },
+                {
+                    headers: {
+                        Authorization: `Bearer ${userDetail.token}`,
+                    },
                 }
-            })
-            setFolders([res.data.data.folder]);
+            );
+            toast(res.data.message);
+            setOpen(false);
         } catch (error: any) {
-            
+            toast(error.response.data.message);
         }
     }
+
     useEffect(() => {
         (async () => {
             try {
-                const res = await axios.get(`${BACKEND_URL}/folder/get`);
+                setIsLoading(true);
+                const res = await axios.get(`${BACKEND_URL}/folder/get`, {
+                    headers: {
+                        Authorization: `Bearer ${userDetail.token}`,
+                    },
+                });
+                console.log(res.data.data.folders);
                 setFolders(res.data.data.folders);
-            } catch (err: any) {}
+                setIsLoading(false);
+            } catch (err: any) {
+                console.log(err);
+                setIsLoading(false);
+            }
         })();
-    }, []);
+    }, [userDetail.token]);
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
@@ -275,7 +294,13 @@ export default function TodoForm({ children }: { children: React.ReactNode }) {
                             />
 
                             <DialogFooter>
-                                <Button type="submit">Add Todo</Button>
+                                <Button disabled={isLoading}>
+                                    {isLoading ? (
+                                        <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        "Save Todo"
+                                    )}
+                                </Button>
                             </DialogFooter>
                         </form>
                     </Form>
