@@ -34,5 +34,5 @@ export const useIsUserLoggedIn = () => {
                 }
             }
         })();
-    }, [router]);
+    }, [path, router, setUserDeatils]);
 }

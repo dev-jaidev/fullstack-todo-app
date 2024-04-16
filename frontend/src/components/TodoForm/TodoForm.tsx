@@ -9,7 +9,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { format, set } from "date-fns";
+import { format } from "date-fns";
 import {
     Select,
     SelectContent,
@@ -41,14 +41,21 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { CalendarIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { Calendar } from "../ui/calendar";
 import { cn } from "@/lib/utils";
-import { cache, useEffect, useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import { BACKEND_URL } from "../../../config";
-import { useRecoilValue } from "recoil";
-import { userDetails } from "@/lib/recoil/atoms";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { foldersAtom, Todo, todosAtom, userDetails } from "@/lib/recoil/atoms";
 import { toast } from "sonner";
 
-export default function TodoForm({ children, todo }: { children: React.ReactNode, todo?: any}) {
+export default function TodoForm({
+    children,
+    todo,
+}: {
+    children: React.ReactNode;
+    todo?: Todo;
+}) {
+    const setTodos = useSetRecoilState(todosAtom);
     const formSchema = z.object({
         title: z
             .string()
@@ -61,25 +68,55 @@ export default function TodoForm({ children, todo }: { children: React.ReactNode
         tags: z.array(z.string()).max(5, "You can only have up to 5 tags"),
     });
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            title: todo?.title ||"",
-            description: todo.description ||"",
-            priority: todo?.priority.toString() || "1",
-            parent: "",
-            dueDate: undefined,
-            tags: [],
-        },
-    });
-
-    const [folders, setFolders] = useState<any[]>([]);
+    const folders = useRecoilValue(foldersAtom);
     const userDetail = useRecoilValue(userDetails);
     const [open, setOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            title: todo?.title || "",
+            description: todo?.description || "",
+            priority: (todo?.priority?.toString() as "1" | "2" | "3") || "1",
+            parent: todo
+                ? folders.find((folder) => folder._id === todo.parent)?._id
+                : "None",
+            dueDate: todo && todo.dueDate ? new Date(todo.dueDate) : undefined,
+            tags: todo?.tags || [],
+        },
+    });
+
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
+            setIsLoading(true);
+            if (todo) {
+                const res = await axios.put(
+                    `${BACKEND_URL}/todo/update`,
+                    {
+                        id: todo._id,
+                        ...values,
+                        priority: parseInt(values.priority),
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${userDetail.token}`,
+                        },
+                    }
+                );
+            
+
+                toast(res.data.message);
+                setOpen(false);
+                setTodos((prev) =>
+                    prev.map((t) =>
+                        t._id === todo._id ? res.data.data.todo : t
+                    )
+                );
+                setIsLoading(false);
+                return;
+            }
+
             const res = await axios.post(
                 `${BACKEND_URL}/todo/create`,
                 { ...values, priority: parseInt(values.priority) },
@@ -89,38 +126,25 @@ export default function TodoForm({ children, todo }: { children: React.ReactNode
                     },
                 }
             );
+
             toast(res.data.message);
             setOpen(false);
+            setTodos((prev) => [res.data.data.todo, ...prev]);
+            setIsLoading(false);
+
+            console.log(res.data.data.todo);
         } catch (error: any) {
             toast(error.response.data.message);
+            setIsLoading(false);
         }
     }
-
-    useEffect(() => {
-        (async () => {
-            try {
-                setIsLoading(true);
-                const res = await axios.get(`${BACKEND_URL}/folder/get`, {
-                    headers: {
-                        Authorization: `Bearer ${userDetail.token}`,
-                    },
-                });
-                console.log(res.data.data.folders);
-                setFolders(res.data.data.folders);
-                setIsLoading(false);
-            } catch (err: any) {
-                console.log(err);
-                setIsLoading(false);
-            }
-        })();
-    }, [userDetail.token]);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Add Todo</DialogTitle>
+                    <DialogTitle>{todo? "Update Todo": "Add Todo"}</DialogTitle>
                     <DialogDescription>
                         Make changes. Click save when you are done.
                     </DialogDescription>
@@ -202,6 +226,9 @@ export default function TodoForm({ children, todo }: { children: React.ReactNode
                                         <FormLabel>Tags</FormLabel>
                                         <FormControl>
                                             <Tags
+                                                defaulTags={form.getValues(
+                                                    "tags"
+                                                )}
                                                 setFormValue={form.setValue}
                                             />
                                         </FormControl>
@@ -267,7 +294,7 @@ export default function TodoForm({ children, todo }: { children: React.ReactNode
                                         <FormLabel>Folder</FormLabel>
                                         <Select
                                             onValueChange={field.onChange}
-                                            defaultValue={"None"}
+                                            defaultValue={todo?todo.parent:"None"}
                                         >
                                             <FormControl>
                                                 <SelectTrigger>

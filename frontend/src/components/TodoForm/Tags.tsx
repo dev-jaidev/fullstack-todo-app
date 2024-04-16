@@ -26,6 +26,7 @@ import { UseFormSetValue } from "react-hook-form";
 
 export default function Tags({
     setFormValue,
+    defaulTags,
 }: {
     setFormValue: UseFormSetValue<{
         title: string;
@@ -35,13 +36,14 @@ export default function Tags({
         parent?: string | undefined;
         dueDate?: Date | undefined;
     }>;
+    defaulTags: string[];
 }) {
     const userDetail = useRecoilValue(userDetails);
-    const [existingTags, setExistingTags] = useState<[string] | []>([]);
+    const [existingTags, setExistingTags] = useState<string[]>([]);
     const [inputValue, setInputValue] = useState<string>("");
     const ref = useRef<HTMLInputElement>(null);
 
-    const [tags, setTags] = useState<string[]>([]);
+    const [tags, setTags] = useState<string[]>(defaulTags);
     const [open, setOpen] = useState(false);
 
     useEffect(() => {

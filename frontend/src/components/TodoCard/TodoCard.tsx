@@ -1,7 +1,6 @@
 import {
     Card,
     CardContent,
-    CardDescription,
     CardFooter,
     CardHeader,
     CardTitle,
@@ -12,11 +11,12 @@ import TodoDropDownMenu from "./TodoMenu";
 import TodoPopUp from "./TodoPopUp";
 import { BACKEND_URL } from "../../../config";
 import axios from "axios";
-import { userDetails } from "@/lib/recoil/atoms";
-import { useRecoilValue } from "recoil";
+import { todosAtom, userDetails } from "@/lib/recoil/atoms";
+import { useRecoilValue, useSetRecoilState } from "recoil";
 import { toast } from "sonner";
 
 export default function TodoCard({ todo }: { todo: any }) {
+    const setTodos = useSetRecoilState(todosAtom);
     const user = useRecoilValue(userDetails);
     const toggelPin = async () => {
         try {
@@ -32,6 +32,11 @@ export default function TodoCard({ todo }: { todo: any }) {
             );
 
             toast(res.data.message);
+            setTodos((prev) =>
+                [...prev].map((t) =>
+                    t._id === todo._id ? { ...t, isPinned: !t.isPinned } : t
+                )
+            );
         } catch (error: any) {
             toast(error.response.data.message);
         }
@@ -50,13 +55,13 @@ export default function TodoCard({ todo }: { todo: any }) {
             );
 
             toast(res.data.message);
+            setTodos((prev) => prev.filter((t) => t._id !== todo._id));
         } catch (error: any) {
             toast(error.response.data.message);
         }
     };
     const toggleIsCompleted = async () => {
         try {
-            console.log(user.token);
             const res = await axios.put(
                 `${BACKEND_URL}/todo/toggle?id=${todo._id}`,
                 {},
@@ -68,6 +73,13 @@ export default function TodoCard({ todo }: { todo: any }) {
             );
 
             toast(res.data.message);
+            setTodos((prev) =>
+                [...prev].map((t) =>
+                    t._id === todo._id
+                        ? { ...t, isCompleted: !t.isCompleted }
+                        : t
+                )
+            );
         } catch (error: any) {
             toast(error.response.data.message);
         }
@@ -86,7 +98,11 @@ export default function TodoCard({ todo }: { todo: any }) {
                     toggleIsCompleted={toggleIsCompleted}
                 />
             </span>
-            <TodoPopUp todo={todo}>
+            <TodoPopUp
+                todo={todo}
+                toggleIsCompleted={toggleIsCompleted}
+                deleteTodo={deleteTodo}
+            >
                 <div className="hover:cursor-pointer">
                     <CardHeader className="mt-4 pb-4">
                         <CardTitle className="text-xl">{todo.title}</CardTitle>
@@ -127,7 +143,9 @@ export default function TodoCard({ todo }: { todo: any }) {
             <Badge
                 className="absolute right-1 bottom-1 rounded-xl"
                 variant={
-                    new Date(todo.dueDate) > new Date() || !todo.dueDate
+                    new Date(todo.dueDate) > new Date() ||
+                    !todo.dueDate ||
+                    todo.isCompleted
                         ? todo.isCompleted
                             ? "default"
                             : "secondary"

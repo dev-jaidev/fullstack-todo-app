@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import AreYouSure from "../AreYouSure";
+import { Todo } from "@/lib/recoil/atoms";
+import TodoForm from "../TodoForm/TodoForm";
 
 export default function TodoDropDownMenu({
     todo,
@@ -15,7 +17,7 @@ export default function TodoDropDownMenu({
     deleteTodo,
     toggleIsCompleted,
 }: {
-    todo: any;
+    todo: Todo;
     togglePin: any;
     deleteTodo: any;
     toggleIsCompleted: any;
@@ -25,14 +27,17 @@ export default function TodoDropDownMenu({
             <DropdownMenuTrigger className="p-1">
                 <BsThreeDotsVertical size={20} />
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="absolute right-0 w-20">
+            <DropdownMenuContent className="absolute right-0 w-40">
                 <DropdownMenuGroup>
                     <DropdownMenuItem onClick={togglePin}>
-                        {todo.isPinnded ? "Unpin" : "Pin"}
+                        {todo.isPinned ? "Unpin" : "Pin"}
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                         <AreYouSure func={deleteTodo}>
-                            <Button variant="ghost" className="p-1.5">
+                            <Button
+                                variant="ghost"
+                                className="p-1.5 w-full justify-start"
+                            >
                                 Delete
                             </Button>
                         </AreYouSure>
@@ -42,6 +47,16 @@ export default function TodoDropDownMenu({
                             ? "Mark as Pending"
                             : "Mark as Completed"}
                     </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                    <TodoForm todo={todo}>
+                            <Button
+                                variant="ghost"
+                                className="p-1.5 w-full justify-start"
+                            >
+                                Edit
+                            </Button>
+                    </TodoForm>
+                        </DropdownMenuItem>
                 </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
