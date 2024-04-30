@@ -5,19 +5,23 @@ import { useIsUserLoggedIn } from "@/lib/hooks";
 import {
     Folder,
     foldersAtom,
+    Tag,
+    tagsAtom,
     todosAtom,
     userDetails,
 } from "@/lib/recoil/atoms";
 import { useEffect, useRef, useState } from "react";
-import { useRecoilState, useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { BACKEND_URL } from "../../../config";
 import axios from "axios";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
     DropdownMenu,
+    DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TbAdjustmentsHorizontal, TbTruckLoading } from "react-icons/tb";
@@ -33,6 +37,20 @@ import {
 } from "@/components/ui/context-menu";
 import { toast } from "sonner";
 import AreYouSure from "@/components/AreYouSure";
+import { Dialog, DialogTrigger } from "@radix-ui/react-dialog";
+import {
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 const Page = () => {
     useIsUserLoggedIn();
@@ -45,6 +63,17 @@ const Page = () => {
         _id: "",
     });
     const pressTimer = useRef<NodeJS.Timeout | null>(null);
+    const [tags, setTags] = useRecoilState(tagsAtom);
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+    interface Filters {
+        tags?: string;
+        sortbytime?: "older" | "newer";
+        sortbypriority?: "low" | "medium" | "high";
+        iscompeleted?: "true" | "false";
+        sortbyduedate?: "earlier" | "later";
+    }
+    const [filters, setFilters] = useState<Filters>({});
 
     const handleTouchStart = (e: React.TouchEvent) => {
         pressTimer.current = setTimeout(() => {
@@ -77,11 +106,25 @@ const Page = () => {
 
     useEffect(() => {
         (async () => {
+            try {
+                const res = await axios.get(`${BACKEND_URL}/todo/tags`, {
+                    headers: {
+                        Authorization: `Bearer ${user.token}`,
+                    },
+                });
+                setTags(res.data.data.tags);
+            } catch (error) {}
+        })();
+    }, [setTags, user]);
+
+    useEffect(() => {
+        (async () => {
             setIsLoading(true);
             try {
                 const response = await axios.get(`${BACKEND_URL}/todo/get`, {
                     params: {
                         parent: currentFolder._id,
+                        ...filters,
                     },
                     headers: {
                         Authorization: `Bearer ${user.token}`,
@@ -93,12 +136,25 @@ const Page = () => {
             }
             setIsLoading(false);
         })();
-    }, [setTodos, user.token, currentFolder]);
+    }, [setTodos, user.token, currentFolder, filters]);
+
+    useEffect(() => {
+        if (selectedTags.length) {
+            setFilters((prev) => ({
+                ...prev,
+                tags: selectedTags.join(","),
+            }));
+        } else {
+            const newFilters = { ...filters };
+            delete newFilters.tags;
+            setFilters(newFilters);
+        }
+    }, [selectedTags]);
 
     return (
         <>
             <div className="w-full flex justify-between p-2">
-                <h1 className="text-center text-2xl my-4 font-bold">
+                <h1 className="text-center text-lg md:text-2xl my-4 font-bold">
                     Welcome {user.user.name}
                 </h1>
                 <DropdownMenu>
@@ -117,9 +173,373 @@ const Page = () => {
                                 </CreateFolderPopUP>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
-                                <span className="justify-start items-center text-sm gap-2 flex p-3 hover:bg-accent hover:cursor-pointer">
-                                    <TbAdjustmentsHorizontal /> Filters
-                                </span>
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <span className="justify-start items-center text-sm gap-2 flex p-2 hover:bg-accent hover:cursor-pointer">
+                                            <TbAdjustmentsHorizontal /> Filters
+                                        </span>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-[600px]">
+                                        <DialogHeader>
+                                            <DialogTitle>Filters</DialogTitle>
+                                        </DialogHeader>
+                                        <div className="flex justify-around items-center flex-col md:flex-row [&>*]:w-full gap-3 md:[&>*]:w-1/3">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline">
+                                                    Filter By Tags
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-56">
+                                                <DropdownMenuLabel>
+                                                    Tags
+                                                </DropdownMenuLabel>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={
+                                                        !selectedTags.length
+                                                    }
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) => {
+                                                        if (checked) {
+                                                            setSelectedTags([]);
+                                                        }
+                                                    }}
+                                                >
+                                                    All
+                                                </DropdownMenuCheckboxItem>
+                                                {tags.map((tag: Tag) => (
+                                                    <DropdownMenuCheckboxItem
+                                                        key={tag._id}
+                                                        checked={selectedTags.includes(
+                                                            tag._id
+                                                        )}
+                                                        onCheckedChange={(
+                                                            checked
+                                                        ) => {
+                                                            checked
+                                                                ? setSelectedTags(
+                                                                      [
+                                                                          ...selectedTags,
+                                                                          tag._id,
+                                                                      ]
+                                                                  )
+                                                                : setSelectedTags(
+                                                                      selectedTags.filter(
+                                                                          (t) =>
+                                                                              t !==
+                                                                              tag._id
+                                                                      )
+                                                                  );
+                                                        }}
+                                                    >
+                                                        {tag._id}
+                                                    </DropdownMenuCheckboxItem>
+                                                ))}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline">
+                                                    Filter By Status
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-56">
+                                                <DropdownMenuLabel>
+                                                    Status
+                                                </DropdownMenuLabel>
+
+                                                <DropdownMenuCheckboxItem
+                                                    checked={
+                                                        !filters.iscompeleted
+                                                    }
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) => {
+                                                        if (checked) {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.iscompeleted;
+                                                            setFilters(
+                                                                newFilters
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    All
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={
+                                                        filters.iscompeleted ===
+                                                        "true"
+                                                    }
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) => {
+                                                        if (checked) {
+                                                            setFilters({
+                                                                ...filters,
+                                                                iscompeleted:
+                                                                    "true",
+                                                            });
+                                                        } else {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.iscompeleted;
+                                                            setFilters(
+                                                                newFilters
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    Show Completed
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={
+                                                        filters.iscompeleted ===
+                                                        "false"
+                                                    }
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) => {
+                                                        if (checked) {
+                                                            setFilters({
+                                                                ...filters,
+                                                                iscompeleted:
+                                                                    "false",
+                                                            });
+                                                        } else {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.iscompeleted;
+                                                            setFilters(
+                                                                newFilters
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    Show uncomplete
+                                                </DropdownMenuCheckboxItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline">
+                                                    Sort By
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-56">
+                                                <DropdownMenuLabel>
+                                                    Sort
+                                                </DropdownMenuLabel>
+
+                                                <DropdownMenuCheckboxItem
+                                                    checked={
+                                                        !filters.sortbytime &&
+                                                        !filters.sortbypriority &&
+                                                        !filters.sortbyduedate
+                                                    }
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) => {
+                                                        if (checked) {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.sortbypriority;
+                                                            delete newFilters.sortbytime;
+                                                            delete newFilters.sortbyduedate;
+                                                            setFilters(
+                                                                newFilters
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    Sort By Time: Newer
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={
+                                                        filters.sortbytime ===
+                                                        "older"
+                                                    }
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) => {
+                                                        if (checked) {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.sortbypriority;
+                                                            delete newFilters.sortbyduedate;
+                                                            delete newFilters.sortbytime;
+                                                            setFilters({
+                                                                ...newFilters,
+                                                                sortbytime:
+                                                                    "older",
+                                                            });
+                                                        } else {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.sortbypriority;
+                                                            delete newFilters.sortbytime;
+                                                            delete newFilters.sortbyduedate;
+                                                            setFilters(
+                                                                newFilters
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    Sort By Time: Older
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={
+                                                        filters.sortbypriority ===
+                                                        "high"
+                                                    }
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) => {
+                                                        if (checked) {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.sortbypriority;
+                                                            delete newFilters.sortbyduedate;
+                                                            delete newFilters.sortbytime;
+                                                            setFilters({
+                                                                ...newFilters,
+                                                                sortbypriority:
+                                                                    "high",
+                                                            });
+                                                        } else {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.sortbypriority;
+                                                            delete newFilters.sortbytime;
+                                                            delete newFilters.sortbyduedate;
+                                                            setFilters(
+                                                                newFilters
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    Priority: High
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={
+                                                        filters.sortbypriority ===
+                                                        "low"
+                                                    }
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) => {
+                                                        if (checked) {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.sortbypriority;
+                                                            delete newFilters.sortbyduedate;
+                                                            delete newFilters.sortbytime;
+                                                            setFilters({
+                                                                ...newFilters,
+                                                                sortbypriority:
+                                                                    "low",
+                                                            });
+                                                        } else {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.sortbypriority;
+                                                            delete newFilters.sortbytime;
+                                                            delete newFilters.sortbyduedate;
+                                                            setFilters(
+                                                                newFilters
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    Priority: Low
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={
+                                                        filters.sortbyduedate ===
+                                                        "earlier"
+                                                    }
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) => {
+                                                        if (checked) {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.sortbypriority;
+                                                            delete newFilters.sortbyduedate;
+                                                            delete newFilters.sortbytime;
+                                                            setFilters({
+                                                                ...newFilters,
+                                                                sortbyduedate:
+                                                                    "earlier",
+                                                            });
+                                                        } else {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.sortbypriority;
+                                                            delete newFilters.sortbytime;
+                                                            delete newFilters.sortbyduedate;
+                                                            setFilters(
+                                                                newFilters
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    Due Date: Earlier
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={
+                                                        filters.sortbyduedate ===
+                                                        "later"
+                                                    }
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) => {
+                                                        if (checked) {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.sortbypriority;
+                                                            delete newFilters.sortbyduedate;
+                                                            delete newFilters.sortbytime;
+                                                            setFilters({
+                                                                ...newFilters,
+                                                                sortbyduedate:
+                                                                    "later",
+                                                            });
+                                                        } else {
+                                                            const newFilters = {
+                                                                ...filters,
+                                                            };
+                                                            delete newFilters.sortbypriority;
+                                                            delete newFilters.sortbytime;
+                                                            delete newFilters.sortbyduedate;
+                                                            setFilters(
+                                                                newFilters
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    Due Date: Later
+                                                </DropdownMenuCheckboxItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                     </DropdownMenuContent>

@@ -16,10 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
-import { BACKEND_URL } from "../../../config";
-import { useRecoilValue } from "recoil";
-import { userDetails } from "@/lib/recoil/atoms";
+import {  useRecoilValue } from "recoil";
+import { tagsAtom, userDetails } from "@/lib/recoil/atoms";
 import { Input } from "../ui/input";
 import { CrossCircledIcon, PlusCircledIcon } from "@radix-ui/react-icons";
 import { UseFormSetValue } from "react-hook-form";
@@ -39,7 +37,7 @@ export default function Tags({
     defaulTags: string[];
 }) {
     const userDetail = useRecoilValue(userDetails);
-    const [existingTags, setExistingTags] = useState<string[]>([]);
+    const existingTags = useRecoilValue(tagsAtom);
     const [inputValue, setInputValue] = useState<string>("");
     const ref = useRef<HTMLInputElement>(null);
 
@@ -47,24 +45,11 @@ export default function Tags({
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
-        (async () => {
-            try {
-                const res = await axios.get(`${BACKEND_URL}/todo/tags`, {
-                    headers: {
-                        Authorization: `Bearer ${userDetail.token}`,
-                    },
-                });
-                setExistingTags(res.data.data.tags);
-            } catch (error) {}
-        })();
-    }, [userDetail.token]);
-
-    useEffect(() => {
         setFormValue("tags", tags);
     }, [setFormValue, tags]);
 
     return (
-        <div className="flex w-full flex-col items-start justify-between rounded-md border px-4 py-1.5 sm:flex-row sm:items-center">
+        <div className="flex w-full items-start justify-between rounded-md border px-4 py-1.5 flex-row sm:items-center">
             <p className="text-sm font-medium leading-none flex flex-wrap gap-1">
                 {tags.map((tag) => (
                     <span

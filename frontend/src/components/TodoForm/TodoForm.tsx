@@ -96,6 +96,7 @@ export default function TodoForm({
                     {
                         id: todo._id,
                         ...values,
+                        parent: values.parent == "None" ? "" : values.parent,
                         priority: parseInt(values.priority),
                     },
                     {
@@ -104,7 +105,6 @@ export default function TodoForm({
                         },
                     }
                 );
-            
 
                 toast(res.data.message);
                 setOpen(false);
@@ -119,7 +119,11 @@ export default function TodoForm({
 
             const res = await axios.post(
                 `${BACKEND_URL}/todo/create`,
-                { ...values, priority: parseInt(values.priority) },
+                {
+                    ...values,
+                    parent: values.parent === "None" ? "" : values.parent,
+                    priority: parseInt(values.priority),
+                },
                 {
                     headers: {
                         Authorization: `Bearer ${userDetail.token}`,
@@ -131,8 +135,6 @@ export default function TodoForm({
             setOpen(false);
             setTodos((prev) => [res.data.data.todo, ...prev]);
             setIsLoading(false);
-
-            console.log(res.data.data.todo);
         } catch (error: any) {
             toast(error.response.data.message);
             setIsLoading(false);
@@ -144,7 +146,9 @@ export default function TodoForm({
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>{todo? "Update Todo": "Add Todo"}</DialogTitle>
+                    <DialogTitle>
+                        {todo ? "Update Todo" : "Add Todo"}
+                    </DialogTitle>
                     <DialogDescription>
                         Make changes. Click save when you are done.
                     </DialogDescription>
@@ -294,7 +298,9 @@ export default function TodoForm({
                                         <FormLabel>Folder</FormLabel>
                                         <Select
                                             onValueChange={field.onChange}
-                                            defaultValue={todo?todo.parent:"None"}
+                                            defaultValue={
+                                                todo?.parent ? todo.parent : "None"
+                                            }
                                         >
                                             <FormControl>
                                                 <SelectTrigger>
