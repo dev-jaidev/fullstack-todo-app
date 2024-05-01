@@ -9,10 +9,12 @@ const connetToDb_middleware_1 = __importDefault(require("./middlewares/connetToD
 const errorHandle_middleware_1 = __importDefault(require("./middlewares/errorHandle.middleware"));
 const cors_1 = __importDefault(require("cors"));
 const routes_1 = __importDefault(require("./routes"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use(connetToDb_middleware_1.default);
 app.use((0, cors_1.default)({
-    origin: "*",
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
     credentials: true
 }));
 app.use(express_1.default.json({ limit: "16kb" }));

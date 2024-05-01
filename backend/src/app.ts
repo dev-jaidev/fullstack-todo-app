@@ -4,12 +4,14 @@ import connectDB from "./middlewares/connetToDb.middleware";
 import handleError from "./middlewares/errorHandle.middleware";
 import cors from "cors";
 import mainRouter from "./routes";
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express();
 
 app.use(connectDB);
 app.use(cors({
-    origin: "*",
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
     credentials: true
 }))
 
