@@ -22,7 +22,7 @@ export default function RootLayout({
             <body className="font-mono min-h-screen dark:bg-black">
                 <Providers>
                     <div className="w-full min-h-screen flex justify-center">
-                        <main className="min-h-screen container">
+                        <main className="min-h-screen w-full px-2 sm:container">
                             {children}
                             <Toaster />
                         </main>

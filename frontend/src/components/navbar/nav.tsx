@@ -26,7 +26,7 @@ const Nav = () => {
 
     return pathname === "/dashboard" ? (
         <div className="container max-w-[33rem] fixed bottom-3 left-0 right-0 pr-2 pl-2">
-            <Menubar className="h-auto py-2 px-4 gap-4 justify-center bg-green-500 dark:bg-green-300 !bg-opacity-50 rounded-full">
+            <Menubar className="h-auto py-2 px-4 gap-4 justify-center bg-green-500 !bg-opacity-80 rounded-full">
                 <TooltipProvider>
                     <MenubarMenu>
                         <Tooltip>
