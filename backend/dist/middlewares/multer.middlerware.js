@@ -31,7 +31,7 @@ const multer_1 = __importStar(require("multer"));
 const fs_1 = __importDefault(require("fs"));
 const storage = multer_1.default.diskStorage({
     destination: (req, file, cb) => {
-        const uploadPath = "./public/temp";
+        const uploadPath = "/tmp/uploads";
         if (!fs_1.default.existsSync(uploadPath)) {
             fs_1.default.mkdirSync(uploadPath, { recursive: true });
         }

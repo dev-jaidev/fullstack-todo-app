@@ -6,7 +6,7 @@ import fs from "fs"
 
 const storage = multer.diskStorage({
   destination: (req: Request, file:Express.Multer.File, cb) => {
-    const uploadPath = "./public/temp";
+    const uploadPath = "/tmp/uploads";
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
