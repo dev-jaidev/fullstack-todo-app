@@ -51,6 +51,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import TodoForm from "@/components/TodoForm/TodoForm";
 
 const Page = () => {
     useIsUserLoggedIn();
@@ -171,6 +172,15 @@ const Page = () => {
                                         <PlusCircledIcon /> Create Folder
                                     </span>
                                 </CreateFolderPopUP>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <TodoForm>
+                                    <span
+                                        className={`justify-start items-center text-sm gap-2 flex p-2 hover:bg-accent hover:cursor-pointer`}
+                                    >
+                                        <PlusCircledIcon /> Create Todo
+                                    </span>
+                                </TodoForm>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <Dialog>
